@@ -10,7 +10,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <libusb.h>
-#include <assert.h>
+
+#if LIBUSB_HELPER==1 // Accommodate old versions of libusb
+#include "libusb_helper.h"
+#endif
 
 enum {
     LIBUSB_DEBUG_LEVEL = 3,             // Level 3 advised for software debug
@@ -391,4 +394,6 @@ int main(int ac, char **av)
     exit(0);
 }
 
-/* vim:ts=4:sw=4:et: */
+/*
+ * vim:ts=4:sw=4:et
+ */
