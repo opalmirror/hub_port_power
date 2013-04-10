@@ -4,3 +4,4 @@ cscope.*
 *.d
 .*.swp
 hub_port_power
+*.tar.gz

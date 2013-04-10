@@ -1,5 +1,5 @@
 ##  Makefile for hub_port_power tool
-# dependency files (obj/*.d) are generated at compile time
+# dependency files (*.d) are generated at compile time
 
 # Set the version number of this package
 VERSION=0.1.0
@@ -67,7 +67,7 @@ obj_lists: $(OBJLISTS)
 .PHONY: clean
 clean:
 	@echo "  $($(quiet)cmd_clean)"
-	$(Q)$(RM) $(OBJS) $(DEPENDS) core $(PROG) cscope.out
+	$(Q)$(RM) $(OBJS) $(DEPENDS) core $(PROG) cscope.out *.tar.gz
 
 # install rules
 bindir=$(DESTDIR)/sbin
@@ -94,6 +94,16 @@ cscope:
 	@echo "  $($(quiet)cmd_gen)"
 	$(Q)echo $(CSCOPE_INC) $(CSCOPE_SRC) | fmt -1 > cscope.files
 	$(Q)cscope -b
+
+
+.PHONY: dist
+dist:
+	@echo "  $($(quiet)cmd_gen)"
+	$(Q)Tcommit=`git log -1 --pretty=format:%ct` && \
+	     outfile=hub_port_power-$$Tcommit.tar.gz && \
+	     git archive --format=tar --prefix=hub_port_power-$$Tcommit/ HEAD | \
+	     gzip > $$outfile && \
+	     echo $$outfile: created distribution archive
 
 # Process dependencies
 include $(wildcard *.d)
