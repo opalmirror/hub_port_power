@@ -68,7 +68,7 @@ void usage(const char *msg)
 }
 
 /**************************************************************************//**
- * @brief emit a command line usage message
+ * @brief parse command-line arguments into memory pointed to by params
  *
  * @param ac
  *   count of command line arguments
@@ -136,10 +136,10 @@ void parse_args(int ac, char **av, uint16_t *pVid, uint16_t *pPid,
         usage("-p ProductID required");
     }
     if (*pPort_num == 0) {
-        usage("-p PortNum required");
+        usage("-n PortNum required");
     }
     if (*pPower_setting == 2) {
-        usage("-p PowerSetting required");
+        usage("-s PowerSetting required");
     }
 }
 
