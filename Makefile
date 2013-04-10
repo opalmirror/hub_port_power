@@ -77,7 +77,7 @@ obj_lists: $(OBJLISTS)
 .PHONY: clean
 clean:
 	@echo "  $($(quiet)cmd_clean)"
-	$(Q)$(RM) $(OBJS) $(DEPENDS) core $(PROG) cscope.out *.tar.gz
+	$(Q)$(RM) *.o *.d core $(PROG) cscope.* *.tar.gz
 
 # install rules
 bindir=$(DESTDIR)/sbin
