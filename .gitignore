@@ -1,0 +1,6 @@
+.stamp_*
+cscope.*
+*.o
+*.d
+.*.swp
+hub_port_power
