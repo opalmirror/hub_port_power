@@ -41,7 +41,7 @@ void usage(const char *msg)
         fprintf(stderr, "%s: %s\n", progname, msg);
     }
     fprintf(stderr,
-            "usage: %s -v VendorID -p ProductID -n PortNum -s PowerSetting\n",
+            "usage: %s [-q] -v VendorID -p ProductID -n PortNum -s PowerSetting\n",
             progname);
     fprintf(stderr,
             "  -v VendorID      USB Vendor ID (base 16), ex. for SMSC, use -v 0424\n");
@@ -52,6 +52,8 @@ void usage(const char *msg)
             MAX_HUB_PORT);
     fprintf(stderr,
             "  -s PowerSetting  Port Power setting (0 = turn off, 1 = turn on)\n");
+    fprintf(stderr,
+            "  -q               Quiet; suppress debug output\n");
     fprintf(stderr, "\n");
     fprintf(stderr,
             "EXAMPLE: if you run run 'lsusb' and see a hub listed like this:\n");
@@ -85,11 +87,15 @@ void usage(const char *msg)
  * @param pPort_num
  *   pointer to storage location for hub Port Number extracted from command line
  *
+ * @param pQuiet
+ *   pointer to storage location for quiet operation flag
+ *
  * @param pPower_setting
  *   pointer to storage location for port Power Setting extracted from command line
  *****************************************************************************/
 void parse_args(int ac, char **av, uint16_t *pVid, uint16_t *pPid,
-        unsigned int *pPort_num, unsigned int *pPower_setting)
+        unsigned int *pPort_num, unsigned int *pPower_setting,
+        unsigned int *pQuiet)
 {
     progname = *av++;       // save for debug output
     ac--;
@@ -98,6 +104,7 @@ void parse_args(int ac, char **av, uint16_t *pVid, uint16_t *pPid,
     *pPid = 0;
     *pPort_num = 0;
     *pPower_setting = 2;
+    *pQuiet = 0;
 
     for (; ac > 0; ac--, av++) {
         if (*av && strcmp(*av, "-v") == 0) {
@@ -121,6 +128,9 @@ void parse_args(int ac, char **av, uint16_t *pVid, uint16_t *pPid,
                     *pPower_setting > 1) {
                 usage("-s takes a numeric argument of 0 or 1");
             }
+        }
+        else if (*av && strcmp(*av, "-q") == 0) {
+            *pQuiet = 1;
         }
         else {
             usage("unrecognized command-line argument");
@@ -166,8 +176,11 @@ void init_libusb(libusb_context **pUsbctx)
  *
  * @param usbctx
  *   pointer to usb context
+ *
+ * @param quiet
+ *   suppress debug output
  *****************************************************************************/
-void print_libusb_version(libusb_context *usbctx)
+void print_libusb_version(libusb_context *usbctx, int quiet)
 {
     const struct libusb_version *pVer = libusb_get_version();
     if (pVer == NULL) {
@@ -175,9 +188,11 @@ void print_libusb_version(libusb_context *usbctx)
         libusb_exit(usbctx);    // close USB library
         exit(1);
     }
-    printf("Opened libusb: version %d.%d.%d.%d  %s %s\n",
-            pVer->major, pVer->minor, pVer->micro, pVer->nano, pVer->rc,
-            pVer->describe);
+    if (!quiet) {
+        printf("Opened libusb: version %d.%d.%d.%d  %s %s\n",
+                pVer->major, pVer->minor, pVer->micro, pVer->nano, pVer->rc,
+                pVer->describe);
+    }
 }
 
 /**************************************************************************//**
@@ -194,9 +209,12 @@ void print_libusb_version(libusb_context *usbctx)
  *
  * @param pHub_device
  *   pointer to location to store the hub device handle pointer
+ *
+ * @param quiet
+ *   suppress debug output
  *****************************************************************************/
 void find_hub_device(libusb_context *usbctx, uint16_t vid, uint16_t pid,
-        libusb_device_handle **pHub_device)
+        libusb_device_handle **pHub_device, unsigned int quiet)
 {
     int result;
     unsigned int numPasses;
@@ -246,8 +264,10 @@ void find_hub_device(libusb_context *usbctx, uint16_t vid, uint16_t pid,
                 }
 
                 deviceFound = 1;
-                printf("%s: Found matching device at list entry %d of %d\n",
-                        progname, deviceNum+1, numDevices);
+                if (!quiet) {
+                    printf("%s: Found matching device at list entry %d of %d\n",
+                            progname, deviceNum+1, numDevices);
+                }
                 break;
             }
         }
@@ -281,17 +301,23 @@ void find_hub_device(libusb_context *usbctx, uint16_t vid, uint16_t pid,
  *
  * @param hub_configuration
  *   USB device configuration to check and configure (typ. 1)
+ *
+ * @param quiet
+ *   suppress debug output
  *****************************************************************************/
 void set_hub_configuration(libusb_context *usbctx,
-        libusb_device_handle *hub_device, int hub_configuration)
+        libusb_device_handle *hub_device, int hub_configuration,
+        unsigned int quiet)
 {
     int result;
     int currConfiguration;
 
     result = libusb_get_configuration(hub_device, &currConfiguration);
     if (currConfiguration != hub_configuration) {
-        printf("%s: Setting USB device configuration to %d\n", progname,
-                hub_configuration);
+        if (!quiet) {
+            printf("%s: Setting USB device configuration to %d\n", progname,
+                    hub_configuration);
+        }
         result = libusb_set_configuration(hub_device, hub_configuration);
         if (result != 0) {
             fprintf(stderr,
@@ -316,9 +342,13 @@ void set_hub_configuration(libusb_context *usbctx,
  *
  * @param port_power_on
  *   If zero, clear port power feature. If non-zero, set port power feature.
+ *
+ * @param quiet
+ *   suppress debug output
  *****************************************************************************/
 void set_hub_port_power(libusb_context *usbctx,
-        libusb_device_handle *hub_device, int port_num, int port_power_on)
+        libusb_device_handle *hub_device, int port_num, int port_power_on,
+        unsigned int quiet)
 {
     int result = 1;
     int numAttempts = 0;
@@ -358,8 +388,10 @@ void set_hub_port_power(libusb_context *usbctx,
         libusb_exit(usbctx);    // close USB library
         exit(1);
     }
-    printf("%s: Hub port %d power Port-%s-Feature\n", progname, port_num,
-            (port_power_on ? "Set" : "Clear"));
+    if (!quiet) {
+        printf("%s: Hub port %d power Port-%s-Feature\n", progname, port_num,
+                (port_power_on ? "Set" : "Clear"));
+    }
 }
 
 /**************************************************************************//**
@@ -381,15 +413,16 @@ int main(int ac, char **av)
     uint16_t pid;
     unsigned int port_num;
     unsigned int power_setting;
+    unsigned int quiet;
 
-    parse_args(ac, av, &vid, &pid, &port_num, &power_setting);
+    parse_args(ac, av, &vid, &pid, &port_num, &power_setting, &quiet);
     init_libusb(&usbctx);
     libusb_set_debug(usbctx, LIBUSB_DEBUG_LEVEL);
-    print_libusb_version(usbctx);
-    find_hub_device(usbctx, vid, pid, &hub_device);
-    set_hub_configuration(usbctx, hub_device, HUB_DEVICE_CONFIGURATION);
+    print_libusb_version(usbctx, quiet);
+    find_hub_device(usbctx, vid, pid, &hub_device, quiet);
+    set_hub_configuration(usbctx, hub_device, HUB_DEVICE_CONFIGURATION, quiet);
     // note: for hub control transfers, interface need not be set
-    set_hub_port_power(usbctx, hub_device, port_num, power_setting);
+    set_hub_port_power(usbctx, hub_device, port_num, power_setting, quiet);
 
     exit(0);
 }
