@@ -3,7 +3,6 @@
  * @brief Supplement older versions of libusb with missing declarations
  *
  * @details Extracted from header file
- * @license LGPL
  *
  * Public libusb header file
  * Copyright (C) 2007-2008 Daniel Drake <dsd@gentoo.org>
