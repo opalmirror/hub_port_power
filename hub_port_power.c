@@ -19,6 +19,7 @@ enum {
     LIBUSB_DEBUG_LEVEL = 3,             // Level 3 advised for software debug
     USB_RT_PORT = (LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_OTHER),
     USB_PORT_FEAT_POWER = 8,            // USB port power feature code
+    MAX_HUB_INSTANCE = 15,              // max matching USB HUB instance
     MAX_HUB_PORT = 7,                   // max number of device ports on USB HUB
     MAX_HUB_FIND_RETRIES = 2,           // # of attempts to read device list
     HUB_FIND_RETRY_SLEEP = 4,           // # seconds to wait between hub retries
@@ -41,12 +42,16 @@ void usage(const char *msg)
         fprintf(stderr, "%s: %s\n", progname, msg);
     }
     fprintf(stderr,
-            "usage: %s [-q] -v VendorID -p ProductID -n PortNum -s PowerSetting\n",
+            "usage: %s [-q] -v VendorID -p ProductID [-i Instance ]\n"
+            "               -n PortNum -s PowerSetting\n",
             progname);
     fprintf(stderr,
             "  -v VendorID      USB Vendor ID (base 16), ex. for SMSC, use -v 0424\n");
     fprintf(stderr,
             "  -p ProductID     USB Product ID (base 16), ex. for 2514 hub, use -p 2514\n");
+    fprintf(stderr,
+            "  -i Instance      Use the Instance'th hub matching -v, -p (range 1 to %u)\n",
+            MAX_HUB_INSTANCE);
     fprintf(stderr,
             "  -n PortNum       USB Hub Port Number to affect (range 1 to %u)\n",
             MAX_HUB_PORT);
@@ -84,6 +89,9 @@ void usage(const char *msg)
  * @param pPid
  *   pointer to storage location for USB ProductID extracted from command line
  *
+ * @param pHub_instance
+ *   pointer to storage location for hub Instance extracted from command line
+ *
  * @param pPort_num
  *   pointer to storage location for hub Port Number extracted from command line
  *
@@ -94,14 +102,15 @@ void usage(const char *msg)
  *   pointer to storage location for port Power Setting extracted from command line
  *****************************************************************************/
 void parse_args(int ac, char **av, uint16_t *pVid, uint16_t *pPid,
-        unsigned int *pPort_num, unsigned int *pPower_setting,
-        unsigned int *pQuiet)
+        unsigned int *pHub_instance, unsigned int *pPort_num,
+        unsigned int *pPower_setting, unsigned int *pQuiet)
 {
     progname = *av++;       // save for debug output
     ac--;
 
     *pVid = 0;
     *pPid = 0;
+    *pHub_instance = 1;
     *pPort_num = 0;
     *pPower_setting = 2;
     *pQuiet = 0;
@@ -115,6 +124,12 @@ void parse_args(int ac, char **av, uint16_t *pVid, uint16_t *pPid,
         else if (*av && strcmp(*av, "-p") == 0) {
             if (--ac <= 0 || sscanf(*++av, "%hx", pPid) != 1 || *pPid == 0) {
                 usage("-p takes a hexadecimal argument between 1 and ffff");
+            }
+        }
+        else if (*av && strcmp(*av, "-i") == 0) {
+            if (--ac <= 0 || sscanf(*++av, "%u", pHub_instance) != 1 ||
+                    *pHub_instance == 0 || *pHub_instance > MAX_HUB_INSTANCE) {
+                usage("-i takes a numeric argument");
             }
         }
         else if (*av && strcmp(*av, "-n") == 0) {
@@ -207,6 +222,9 @@ void print_libusb_version(libusb_context *usbctx, int quiet)
  * @param pid
  *   USB ProductID of hub device to find
  *
+ * @param hub_instance
+ *   instance of matching hub device to find
+ *
  * @param pHub_device
  *   pointer to location to store the hub device handle pointer
  *
@@ -214,10 +232,12 @@ void print_libusb_version(libusb_context *usbctx, int quiet)
  *   suppress debug output
  *****************************************************************************/
 void find_hub_device(libusb_context *usbctx, uint16_t vid, uint16_t pid,
-        libusb_device_handle **pHub_device, unsigned int quiet)
+        unsigned int hub_instance, libusb_device_handle **pHub_device,
+        unsigned int quiet)
 {
     int result;
     unsigned int numPasses;
+    int instanceFound;
     int deviceFound;
     int numDevices;
     int deviceNum;
@@ -241,6 +261,7 @@ void find_hub_device(libusb_context *usbctx, uint16_t vid, uint16_t pid,
         }
 
         // search list for specified VID and PID, starting from end of list
+        instanceFound = 0;
         for (deviceNum = numDevices-1; deviceNum >=0 && !deviceFound;
                 deviceNum--) {
             result = libusb_get_device_descriptor(deviceList[deviceNum],
@@ -252,7 +273,8 @@ void find_hub_device(libusb_context *usbctx, uint16_t vid, uint16_t pid,
                         libusb_error_name(result));
                 continue;
             }
-            if (devDesc.idVendor == vid && devDesc.idProduct == pid) {
+            if (devDesc.idVendor == vid && devDesc.idProduct == pid &&
+                    ++instanceFound == hub_instance) {
                 // Found a matching device, open it
                 result = libusb_open(deviceList[deviceNum], pHub_device);
                 if (result != 0) {
@@ -265,8 +287,8 @@ void find_hub_device(libusb_context *usbctx, uint16_t vid, uint16_t pid,
 
                 deviceFound = 1;
                 if (!quiet) {
-                    printf("%s: Found matching device at list entry %d of %d\n",
-                            progname, deviceNum+1, numDevices);
+                    printf("%s: Found matching device instance %u at list entry %d of %d\n",
+                            progname, instanceFound, deviceNum+1, numDevices);
                 }
                 break;
             }
@@ -277,8 +299,9 @@ void find_hub_device(libusb_context *usbctx, uint16_t vid, uint16_t pid,
         }
         else {
             fprintf(stderr,
-                    "%s: No devices with vid 0x%04X, pid 0x%04X in list of %d devices\n",
-                    progname, vid, pid, numDevices);
+                    "%s: No device matching vid 0x%04X, pid 0x%04X, instance %u found\n"
+                    "  in list of %d devices\n",
+                    progname, vid, pid, hub_instance, numDevices);
             libusb_free_device_list(deviceList, 1);
         }
     }
@@ -411,15 +434,17 @@ int main(int ac, char **av)
     libusb_device_handle *hub_device;
     uint16_t vid;
     uint16_t pid;
+    unsigned int hub_instance;
     unsigned int port_num;
     unsigned int power_setting;
     unsigned int quiet;
 
-    parse_args(ac, av, &vid, &pid, &port_num, &power_setting, &quiet);
+    parse_args(ac, av, &vid, &pid, &hub_instance, &port_num, &power_setting,
+            &quiet);
     init_libusb(&usbctx);
     libusb_set_debug(usbctx, LIBUSB_DEBUG_LEVEL);
     print_libusb_version(usbctx, quiet);
-    find_hub_device(usbctx, vid, pid, &hub_device, quiet);
+    find_hub_device(usbctx, vid, pid, hub_instance, &hub_device, quiet);
     set_hub_configuration(usbctx, hub_device, HUB_DEVICE_CONFIGURATION, quiet);
     // note: for hub control transfers, interface need not be set
     set_hub_port_power(usbctx, hub_device, port_num, power_setting, quiet);
