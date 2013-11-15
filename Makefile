@@ -64,8 +64,7 @@ $(PROG): $(OBJS)
 
 %.o: %.c
 	@echo "  $($(quiet)cmd_cc_c_o)"
-	$(Q)$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
-	$(Q)$(CC) -MM $(DEPFLAGS) $< > $*.d
+	$(Q)$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -MMD -MF $*.d -o $@
 
 %.lis: %.o
 	$(OBJDUMP) -d $< > $(@F)
