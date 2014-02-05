@@ -38,7 +38,7 @@ quiet_cmd_cc_cpp_o = CC++    $@
 # lib_helper.c adds entry points from newer versions of libusb
 # lib_helper.h declares missing API from new versions of libusb
 # if we are missing libusb_error_name we will need both
-LIBUSB_HELPER 	:= $(shell grep libusb_error_name `pkg-config --cflags-only-I $(pkg_packages) | sed -e 's/-I//g' -e 's/ *$$//'`/libusb.h >/dev/null; echo $$?)
+LIBUSB_HELPER 	:= $(shell grep libusb_error_name `pkg-config --cflags-only-I $(pkg_packages) | sed -e 's/-I//g' -e 's/ *$$//'`/libusb.h >/dev/null 2>&1; echo $$?)
 
 EXTRA_DEFS 	:= -DLIBUSB_HELPER=$(LIBUSB_HELPER)
 ifeq ($(LIBUSB_HELPER),1)
