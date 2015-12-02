@@ -61,6 +61,7 @@ LDLIBS = $(PKG_LDFLAGS)
 $(PROG): $(OBJS)
 	@echo "  $($(quiet)cmd_link)"
 	$(Q)$(CC) $(LDFLAGS) $(OBJS) $(LOADLIBES) $(LDLIBS) -o $@
+	-../ts_rules/scripts/strip-debug $@
 
 %.o: %.c
 	@echo "  $($(quiet)cmd_cc_c_o)"
@@ -76,7 +77,7 @@ obj_lists: $(OBJLISTS)
 .PHONY: clean
 clean:
 	@echo "  $($(quiet)cmd_clean)"
-	$(Q)$(RM) *.o *.d core $(PROG) cscope.* *.tar.gz
+	$(Q)$(RM) *.o *.d core $(PROG) $(PROG).debug cscope.* *.tar.gz
 
 # install rules
 bindir=$(DESTDIR)/sbin
@@ -87,6 +88,7 @@ install: $(PROG)
 	@echo "  $($(quiet)cmd_install)"
 	$(Q)install -d $(bindir)
 	$(Q)install -t $(bindir) $(PROG)
+	-$(Q)install -t $(bindir) $(PROG).debug
 
 .PHONY: cscope
 cscope:
