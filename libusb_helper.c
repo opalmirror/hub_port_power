@@ -1,4 +1,5 @@
-/**************************************************************************//**
+/**************************************************************************/
+/**
  * @file libusb_helper.c
  * @brief Supplement older versions of libusb with missing entry points
  * @details Derived from public libusb header file
@@ -36,8 +37,10 @@ const struct libusb_version libusb_version_dummy = {
 
 const char *libusb_error_name(int errcode)
 {
-    if (errcode < 0) {
-        switch (errcode) {
+    if (errcode < 0)
+    {
+        switch (errcode)
+        {
             case LIBUSB_ERROR_IO:
                 return "Input/output error";
             case LIBUSB_ERROR_INVALID_PARAM:
@@ -65,7 +68,7 @@ const char *libusb_error_name(int errcode)
             default:
                 break;
         }
-       return "Other error";
+        return "Other error";
     }
     return "Success";
 }
