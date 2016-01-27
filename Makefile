@@ -77,7 +77,7 @@ obj_lists: $(OBJLISTS)
 .PHONY: clean
 clean:
 	@echo "  $($(quiet)cmd_clean)"
-	$(Q)$(RM) *.o *.d core $(PROG) $(PROG).debug cscope.* *.tar.gz
+	$(Q)$(RM) *~ *.o *.d core $(PROG) $(PROG).debug cscope.* *.tar.gz
 
 # install rules
 bindir=$(DESTDIR)/sbin
@@ -96,6 +96,9 @@ cscope:
 	$(Q)echo $(PKG_CFLAGS) $(SRCS) | fmt -1 > cscope.files
 	$(Q)cscope -b
 
+.PHONY: indent
+indent:
+	indent *.h *.c
 
 .PHONY: dist
 dist:

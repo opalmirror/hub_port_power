@@ -1,8 +1,9 @@
+*~
 cscope.*
-hub_port_power
-.stamp_*
-.*.swp
 *.d
 *.debug
+hub_port_power
 *.o
+.stamp_*
+.*.swp
 *.tar.gz

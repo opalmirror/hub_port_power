@@ -1,4 +1,5 @@
-/**************************************************************************//**
+/**************************************************************************/
+/**
  * @file libusb_helper.h
  * @brief Supplement older versions of libusb with missing declarations
  *
@@ -26,24 +27,25 @@
 /*
  * Structure representing the libusb version.
  */
-struct libusb_version {
-	/** Library major version. */
-	const uint16_t major;
+struct libusb_version
+{
+    /** Library major version. */
+    const uint16_t major;
 
-	/** Library minor version. */
-	const uint16_t minor;
+    /** Library minor version. */
+    const uint16_t minor;
 
-	/** Library micro version. */
-	const uint16_t micro;
+    /** Library micro version. */
+    const uint16_t micro;
 
-	/** Library nano version. This field is only nonzero on Windows. */
-	const uint16_t nano;
+    /** Library nano version. This field is only nonzero on Windows. */
+    const uint16_t nano;
 
-	/** Library release candidate suffix string, e.g. "-rc4". */
-	const char *rc;
+    /** Library release candidate suffix string, e.g. "-rc4". */
+    const char *rc;
 
-	/** Output of `git describe --tags` at library build time. */
-	const char *describe;
+    /** Output of `git describe --tags` at library build time. */
+    const char *describe;
 };
 
 const char *libusb_error_name(int errcode);
