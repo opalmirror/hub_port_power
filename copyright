@@ -1,15 +1,17 @@
-The hub_port_power.c application source was written at Datalogic.
+The hub_port_power.c application source was written at Datalogic. It is
+licensed the same as the libusb_helper.* files it is combined with.
 
 Files: hub_port_power.c
-License: All rights reserved.
-Copyright:  2012-2013 Datalogic ADC, Inc.
+License: LGPL-2.1+
+Copyright:  2012-2016 Datalogic ADC, Inc.
 
 
 libusb_helper.* files are derived from files downloaded from http://libusb.info/
 
 Files: libusb_helper.c libusb_helper.h
 License: LGPL-2.1+
-Copyright:  2007-2008 Daniel Drake
+Copyright:  2013-2016 Datalogic ADC, Inc. <jadetechnicalhelp@datalogic.com>
+            2007-2008 Daniel Drake
             2001 Johannes Erdfelt
 
 
