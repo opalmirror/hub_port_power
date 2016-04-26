@@ -4,6 +4,9 @@
  * @brief Supplement older versions of libusb with missing entry points
  * @details Derived from public libusb header file
  *
+ * Modifications
+ * Copyright 2013-2016 Datalogic ADC, Inc. <jadetechnicalhelp@datalogic.com>
+ *
  * Public libusb header file
  * Copyright (C) 2007-2008 Daniel Drake <dsd@gentoo.org>
  * Copyright (c) 2001 Johannes Erdfelt <johannes@erdfelt.com>
